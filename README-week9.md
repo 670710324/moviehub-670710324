@@ -35,16 +35,17 @@ npm start
 | `src/components/ReviewList.jsx`, `MovieActions.jsx` | ใหม่ (MovieActions มี TODO ขั้นที่ 5) | รายการรีวิว / ปุ่มให้คะแนนและ wishlist |
 | `src/pages/Wishlist.jsx` | ใหม่ มี TODO ขั้นที่ 4 | หน้า /me/wishlist |
 | `src/components/Navbar.jsx`, `src/App.jsx` | แทนที่ | เมนู login/logout, เส้นทางใหม่, AuthProvider ครอบแอป |
-| `package.json` | แทนที่ | เพิ่ม `proxy`, สคริปต์ `mock`, devDependencies express + cors |
-| `.env.example` | แทนที่ | เพิ่ม `REACT_APP_API_URL` (ว่าง = ใช้ mock) |
+| `package.json` | แทนที่ | เพิ่มสคริปต์ `mock`, devDependencies express + cors |
+| `.env.example` | แทนที่ | เพิ่ม `REACT_APP_API_URL` (ต้องตั้งค่า; ไม่มี fallback ไป mock) |
 
 ถ้าเคยแก้ `package.json` เองไว้ ไม่ต้องวางทับ ให้เพิ่ม 3 จุดนี้แทน
 
 ```json
-"proxy": "http://localhost:4000",
 "scripts": { "mock": "node mock/server.js" },
 "devDependencies": { "express": "^4.21.2", "cors": "^2.8.5" }
 ```
+
+หากต้องการทดลองกับ mock ในเครื่อง ให้ตั้ง `REACT_APP_API_URL=http://localhost:4000` ใน `.env` ด้วย ระบบไม่มี proxy หรือ fallback ไป mock โดยอัตโนมัติ
 
 ## 5 ขั้นของวันนี้ (ค้นคำว่า TODO ขั้นที่)
 

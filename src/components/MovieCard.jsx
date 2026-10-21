@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-// การ์ดหนัง 1 ใบ รับ object รูปร่างเดียวกับ data.js: { id, title, titleTh, year, genre, rating, poster }
+// การ์ดหนัง 1 ใบ รับ object จาก MovieHub API: { id, title, titleTh, year, genre, rating, poster }
 function MovieCard({ movie }) {
   return (
     <Link to={`/movies/${movie.id}`}

@@ -20,7 +20,7 @@ function MovieGrid({ movies, status, error, onRetry }) {
 
   if (status === 'error') {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
+      <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
         <p className="font-medium text-red-700">โหลดข้อมูลไม่สำเร็จ</p>
         <p className="mt-1 text-sm text-red-500">{error?.message}</p>
         {onRetry && (

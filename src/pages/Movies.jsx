@@ -1,25 +1,25 @@
 import { useEffect, useState } from 'react';
 import MovieGrid from '../components/MovieGrid';
-import { getMovies} from '../api/backend';
-//import { forget } from '../api/cache';//
+import { getMovies } from '../api/backend';
 
 function Movies() {
   const [query, setQuery] = useState('');          // คำค้น (controlled input) กรองในเครื่อง ไม่ยิง API
   const [genre, setGenre] = useState('all');       // แนวที่เลือกจากแถบปุ่ม 'all' = ทุกแนว
 
-  const [movies, setMovies] = useState([]);        // รายการจาก getMovies() (โหลดจริงวันละครั้ง)
+  const [movies, setMovies] = useState([]);        // รายการจาก MovieHub API
   const [status, setStatus] = useState('loading'); // 'loading' | 'success' | 'error'
   const [error, setError] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);   // ตัวนับสำหรับปุ่ม "ลองใหม่"
 
-  // โหลดตอน component เกิด และทุกครั้งที่กด "ลองใหม่" (reloadKey เปลี่ยน)
+  // โหลดตอนเปิดหน้าและทุกครั้งที่กด "ลองใหม่"
   useEffect(() => {
-    let ignore = false;                            // ธงกันคำตอบเก่ามาทับคำตอบใหม่
+    let ignore = false;
 
     async function load() {
       setStatus('loading');
+      setError(null);
       try {
-        const list = await getMovies();            // ครั้งแรกของวันยิง API ครั้งถัดไปอ่านจาก localStorage
+        const list = await getMovies();
         if (!ignore) {
           setMovies(list);
           setStatus('success');
@@ -33,7 +33,7 @@ function Movies() {
     }
     load();
 
-    return () => { ignore = true; };               // cleanup: effect รอบเก่าถูกยกเลิก
+    return () => { ignore = true; };
   }, [reloadKey]);
 
   // ค่าที่คำนวณจาก state ไม่ต้องเป็น state เอง: รายชื่อแนวที่มีจริง และรายการหลังกรอง
@@ -54,7 +54,7 @@ function Movies() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">หนังทั้งหมด</h1>
           <p className="text-sm text-slate-500">
-            แหล่งข้อมูล: TMDB (โหลดวันละครั้ง) {status === 'success' && `| พบ ${shown.length} จาก ${movies.length} เรื่อง`}
+            แหล่งข้อมูล: MovieHub API {status === 'success' && `| พบ ${shown.length} จาก ${movies.length} เรื่อง`}
           </p>
         </div>
         <input value={query} onChange={(e) => setQuery(e.target.value)}
@@ -70,9 +70,8 @@ function Movies() {
         ))}
       </div>
 
-      {/* ปุ่มลองใหม่ต้องล้าง cache ก่อน ไม่งั้นจะได้ของเก่าหรือ error เดิมซ้ำ */}
       <MovieGrid movies={shown} status={status} error={error}
-                 onRetry={() => {setReloadKey(k => k + 1); }} />
+                 onRetry={() => setReloadKey(key => key + 1)} />
     </div>
   );
 }

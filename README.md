@@ -15,6 +15,8 @@ npm start
 
 ## Backend และหน้า Admin (Week 12)
 
+กำหนด `REACT_APP_API_URL` เป็น URL ของ MovieHub Backend โดยไม่มี `/api` ต่อท้าย ระบบจะไม่ใช้ mock server หรือ relative URL เป็น fallback หากไม่ได้กำหนดตัวแปรจะแจ้ง error แทน
+
 ตั้ง `REACT_APP_API_URL` เป็น `https://moviehub-api-mk2i.onrender.com` ใน `.env` สำหรับเครื่อง local และตั้งชื่อตัวแปรเดียวกันใน frontend host ก่อน build/deploy เว็บจะเก็บ access token ใน `localStorage` และแนบ Bearer token ให้ endpoint ที่ต้อง login ส่วนการตรวจสิทธิ์จริงทำโดย Go API
 
 หลังสร้างสมาชิก ให้ผู้ดูแลระบบตั้ง role เป็น `admin` ในฐานข้อมูล แล้วผู้ใช้นั้นต้องออกจากระบบและ login ใหม่เพื่อรับ JWT ที่มี role ล่าสุด หน้า `/admin` มี Dashboard, ตารางสมาชิก/เปลี่ยน role และจัดการหนัง
@@ -63,8 +65,9 @@ vercel.json                 ตั้งค่าให้ refresh หน้า�
 
 1. push โค้ดขึ้น GitHub (ตรวจว่า `git status` ไม่มีไฟล์ `.env`)
 2. Vercel: Add New Project แล้วเลือก repo ถ้าโปรเจกต์อยู่ในโฟลเดอร์ย่อย ให้ตั้ง Root Directory เป็นโฟลเดอร์นั้น
-3. Settings แล้ว Environment Variables เพิ่ม `REACT_APP_TMDB_KEY` ค่าเดียวกับใน .env
-4. Deploy (ถ้าเพิ่มตัวแปรทีหลังต้องกด Redeploy)
+3. Settings → Environment Variables เพิ่ม `REACT_APP_API_URL` เป็น URL ของ MovieHub Backend (ไม่ใส่ path `/api`) และเพิ่ม `REACT_APP_TMDB_KEY` หากยังใช้หน้า API Lab/TMDB
+4. ตรวจว่า origin ของ Vercel ถูกเพิ่มใน `ALLOWED_ORIGINS` ของ Backend แล้ว
+5. Deploy (ถ้าเพิ่มหรือแก้ตัวแปรทีหลังต้องกด Redeploy)
 
 ## เครดิต
 
