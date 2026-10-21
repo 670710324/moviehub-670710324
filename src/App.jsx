@@ -13,6 +13,11 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Wishlist from './pages/Wishlist';
 import NotFound from './pages/NotFound';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminMembers from './pages/admin/AdminMembers';
+import AdminMovies from './pages/admin/AdminMovies';
+import AdminMovieForm from './pages/admin/AdminMovieForm';
 
 function App() {
   return (
@@ -29,6 +34,13 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/me/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="members" element={<AdminMembers />} />
+              <Route path="movies" element={<AdminMovies />} />
+              <Route path="movies/new" element={<AdminMovieForm />} />
+              <Route path="movies/:id/edit" element={<AdminMovieForm />} />
+            </Route>
             <Route path="/lab" element={<ApiLab />} />
             <Route path="/about" element={<About />} />
             <Route path="*" element={<NotFound />} />

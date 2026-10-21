@@ -3,11 +3,9 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '../auth/AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 
-// หน้าปลอม 2 หน้า พอให้รู้ว่าตอนนี้อยู่หน้าไหน
 function Secret() { return <h1>หน้าลับ</h1>; }
 function LoginPage() { return <h1>หน้า Login</h1>; }
 
-// วาดแอปจิ๋ว: เริ่มที่ /me/wishlist ซึ่งครอบด้วย ProtectedRoute
 function renderAt(path) {
   return render(
     <AuthProvider>
@@ -21,20 +19,56 @@ function renderAt(path) {
   );
 }
 
-beforeEach(() => localStorage.clear());   // AuthProvider อ่าน token จาก localStorage ตอนเริ่ม ต้องล้างให้สะอาดทุกเทสต์
+beforeEach(() => localStorage.clear());
 
 test('ยังไม่ login ต้องถูกพาไปหน้า Login', () => {
   renderAt('/me/wishlist');
-
   expect(screen.getByRole('heading', { name: 'หน้า Login' })).toBeInTheDocument();
   expect(screen.queryByText('หน้าลับ')).not.toBeInTheDocument();
 });
 
 test('มี token ใน localStorage แล้ว ต้องเห็นหน้าลับ', () => {
-  localStorage.setItem('moviehub.token', 'mock.1.abc');
-  localStorage.setItem('moviehub.member', JSON.stringify({ id: 1, displayName: 'Demo' }));
-
+  localStorage.setItem('moviehub.token', 'member-token');
+  localStorage.setItem('moviehub.member', JSON.stringify({ id: 1, role: 'member' }));
   renderAt('/me/wishlist');
-
   expect(screen.getByRole('heading', { name: 'หน้าลับ' })).toBeInTheDocument();
+});
+
+test('session ที่ข้อมูลสมาชิกเสียหายถูกล้างและต้อง login ใหม่', () => {
+  localStorage.setItem('moviehub.token', 'broken-token');
+  localStorage.setItem('moviehub.member', '{invalid-json');
+  renderAt('/me/wishlist');
+  expect(screen.getByRole('heading', { name: 'หน้า Login' })).toBeInTheDocument();
+  expect(localStorage.getItem('moviehub.token')).toBeNull();
+});
+
+test('member ห้ามเข้าหน้า admin แม้มี token', () => {
+  localStorage.setItem('moviehub.token', 'member-token');
+  localStorage.setItem('moviehub.member', JSON.stringify({ id: 2, role: 'member' }));
+  render(
+    <AuthProvider>
+      <MemoryRouter initialEntries={['/admin']}>
+        <Routes>
+          <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Secret /></ProtectedRoute>} />
+        </Routes>
+      </MemoryRouter>
+    </AuthProvider>
+  );
+  expect(screen.getByRole('heading', { name: 'ไม่มีสิทธิ์เข้าถึงหน้านี้' })).toBeInTheDocument();
+  expect(screen.queryByText('หน้าลับ')).not.toBeInTheDocument();
+});
+
+test('admin เข้า route ที่จำกัด role ได้', () => {
+  localStorage.setItem('moviehub.token', 'admin-token');
+  localStorage.setItem('moviehub.member', JSON.stringify({ id: 3, role: 'admin' }));
+  render(
+    <AuthProvider>
+      <MemoryRouter initialEntries={['/admin']}>
+        <Routes>
+          <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Secret /></ProtectedRoute>} />
+        </Routes>
+      </MemoryRouter>
+    </AuthProvider>
+  );
+  expect(screen.getByText('หน้าลับ')).toBeInTheDocument();
 });

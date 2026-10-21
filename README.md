@@ -13,6 +13,16 @@ npm start
 
 ถ้ายังไม่ได้ใส่ key (หรือใส่ผิดรูปแบบ) จะเห็นแถบสีเหลืองเตือนอยู่ใต้เมนู ใส่แล้วต้อง **หยุดแล้วรัน npm start ใหม่** แถบถึงจะหาย
 
+## Backend และหน้า Admin (Week 12)
+
+ตั้ง `REACT_APP_API_URL` เป็น `https://moviehub-api-mk2i.onrender.com` ใน `.env` สำหรับเครื่อง local และตั้งชื่อตัวแปรเดียวกันใน frontend host ก่อน build/deploy เว็บจะเก็บ access token ใน `localStorage` และแนบ Bearer token ให้ endpoint ที่ต้อง login ส่วนการตรวจสิทธิ์จริงทำโดย Go API
+
+หลังสร้างสมาชิก ให้ผู้ดูแลระบบตั้ง role เป็น `admin` ในฐานข้อมูล แล้วผู้ใช้นั้นต้องออกจากระบบและ login ใหม่เพื่อรับ JWT ที่มี role ล่าสุด หน้า `/admin` มี Dashboard, ตารางสมาชิก/เปลี่ยน role และจัดการหนัง
+
+API deployment ปัจจุบันยังไม่รองรับ `GET /api/admin/movies` (ตอบ 405 และอนุญาตเฉพาะ POST) ตารางหนังจึงโหลดรายการจาก `GET /api/movies`; การอ่านรายละเอียด แก้ไข และลบใช้ admin endpoints ตามปกติ
+
+ก่อน deploy frontend ต้องทราบ origin จริงของเว็บก่อน แล้วเพิ่ม origin นั้นใน `ALLOWED_ORIGINS` บน Render ของ backend (เช่น `https://<ชื่อเว็บจริง>.vercel.app`) จึงจะอนุญาต browser เรียก API ข้าม origin ได้
+
 ## โครงสร้างไฟล์
 
 ```

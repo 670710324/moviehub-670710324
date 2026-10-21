@@ -1,32 +1,38 @@
-import { apiFetch, login, postReview } from './backend';
+import {
+  apiFetch,
+  createAdminMovie,
+  deleteAdminMovie,
+  getAdminStats,
+  login,
+  addToWishlist,
+  postReview,
+  setMemberRole,
+} from './backend';
 
-// ตัวช่วยสร้าง "คำตอบปลอม" ของ fetch: ใส่แค่ status กับ body ที่อยากให้ server ตอบ
 function fakeResponse(status, body) {
   return {
-    ok: status >= 200 && status < 300,          // fetch ของจริงคำนวณ ok แบบนี้
+    ok: status >= 200 && status < 300,
     status,
-    json: () => Promise.resolve(body),         // res.json() คืน Promise เสมอ
+    json: () => Promise.resolve(body),
   };
 }
 
 beforeEach(() => {
-  // แทน fetch ของเบราว์เซอร์ด้วยฟังก์ชันปลอมที่เราควบคุมคำตอบได้ และจดทุกครั้งที่ถูกเรียก
   global.fetch = jest.fn();
 });
-test('GET ธรรมดา: ไม่มี body ไม่มี Authorization และคืน object ที่แปลงแล้ว', async () => {
+
+test('GET ธรรมดาไม่มี body หรือ Authorization และคืน object ที่แปลงแล้ว', async () => {
   fetch.mockResolvedValue(fakeResponse(200, { items: [{ id: 1 }] }));
 
-  const data = await apiFetch('/api/movies');
-
-  expect(data).toEqual({ items: [{ id: 1 }] });
-  const [url, options] = fetch.mock.calls[0];            // อาร์กิวเมนต์ที่ apiFetch ส่งให้ fetch
+  await expect(apiFetch('/api/movies')).resolves.toEqual({ items: [{ id: 1 }] });
+  const [url, options] = fetch.mock.calls[0];
   expect(url).toBe('/api/movies');
   expect(options.method).toBe('GET');
   expect(options.body).toBeUndefined();
   expect(options.headers.Authorization).toBeUndefined();
 });
 
-test('มี token ต้องแนบ Authorization แบบ Bearer และ body ต้องเป็นข้อความ JSON', async () => {
+test('ส่ง Bearer token และ body JSON ในคำขอที่ต้อง login', async () => {
   fetch.mockResolvedValue(fakeResponse(201, { id: 7 }));
 
   await postReview(969681, 'สนุกมาก ฉากแอ็กชันดี', 'abc123');
@@ -34,13 +40,14 @@ test('มี token ต้องแนบ Authorization แบบ Bearer แล�
   const [url, options] = fetch.mock.calls[0];
   expect(url).toBe('/api/movies/969681/reviews');
   expect(options.method).toBe('POST');
-  expect(options.headers.Authorization).toBe('Bearer abc123');
+  expect(options.headers.Authorization).toBe(`Bearer ${'abc123'}`);
   expect(options.headers['Content-Type']).toBe('application/json');
   expect(options.body).toBe(JSON.stringify({ text: 'สนุกมาก ฉากแอ็กชันดี' }));
 });
+
 test('204 คืน null โดยไม่เรียก res.json()', async () => {
   const res = fakeResponse(204, null);
-  res.json = jest.fn();                                   // ถ้าถูกเรียกแปลว่าโค้ดผิด
+  res.json = jest.fn();
   fetch.mockResolvedValue(res);
 
   const data = await apiFetch('/api/me/wishlist/1', { method: 'DELETE', token: 'abc' });
@@ -49,18 +56,80 @@ test('204 คืน null โดยไม่เรียก res.json()', async ()
   expect(res.json).not.toHaveBeenCalled();
 });
 
-test('ไม่ใช่ 2xx ต้องโยน Error ที่มีข้อความจาก server และเลข status', async () => {
-  fetch.mockResolvedValue(fakeResponse(401, { error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' }));
+test('อ่าน Go error envelope และแนบ code กับ status ใน Error', async () => {
+  fetch.mockResolvedValue(fakeResponse(401, {
+    error: { code: 'BAD_CREDENTIALS', message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' },
+  }));
 
-  // ฟังก์ชัน async ที่ throw ต้องเช็กด้วย rejects
   await expect(login('a@b.c', 'wrong')).rejects.toThrow('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
-
-  // เช็กเลข status ที่แปะไว้บน Error ด้วย
-  const err = await login('a@b.c', 'wrong').catch(e => e);
+  const err = await login('a@b.c', 'wrong').catch(error => error);
   expect(err.status).toBe(401);
+  expect(err.code).toBe('BAD_CREDENTIALS');
 });
-test('server ตอบมาไม่ใช่ JSON (เช่น ลืมรัน mock) ต้องได้ข้อความที่เข้าใจได้ ไม่ใช่ SyntaxError', async () => {
-  fetch.mockResolvedValue({ ok: false, status: 404, json: () => Promise.reject(new SyntaxError('Unexpected token <')) });
+
+test('ยังอ่าน error รูปแบบ string จาก mock เก่าได้', async () => {
+  fetch.mockResolvedValue(fakeResponse(409, { error: 'อีเมลนี้ถูกใช้แล้ว' }));
+  await expect(login('a@b.c', 'wrong')).rejects.toThrow('อีเมลนี้ถูกใช้แล้ว');
+});
+
+test('admin API แนบ Bearer token และส่ง method, path, body ถูกต้อง', async () => {
+  fetch
+    .mockResolvedValueOnce(fakeResponse(200, { movies: 1 }))
+    .mockResolvedValueOnce(fakeResponse(200, { id: 8, role: 'admin' }))
+    .mockResolvedValueOnce(fakeResponse(201, { id: 99 }));
+
+  await getAdminStats('admin-jwt');
+  await setMemberRole(8, 'admin', 'admin-jwt');
+  await createAdminMovie({ id: 0, title: 'New movie' }, 'admin-jwt');
+
+  expect(fetch.mock.calls[0][0]).toBe('/api/admin/stats');
+  expect(fetch.mock.calls[0][1].headers.Authorization).toBe(`Bearer ${'admin-jwt'}`);
+  expect(fetch.mock.calls[1][0]).toBe('/api/admin/members/8/role');
+  expect(fetch.mock.calls[1][1]).toMatchObject({
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${'admin-jwt'}` },
+    body: JSON.stringify({ role: 'admin' }),
+  });
+  expect(fetch.mock.calls[2][0]).toBe('/api/admin/movies');
+  expect(fetch.mock.calls[2][1]).toMatchObject({
+    method: 'POST',
+    headers: { Authorization: `Bearer ${'admin-jwt'}` },
+    body: JSON.stringify({ id: 0, title: 'New movie' }),
+  });
+});
+
+test('ลบหนังด้วย DELETE และจัดการ 204 response', async () => {
+  fetch.mockResolvedValue(fakeResponse(204, null));
+
+  await expect(deleteAdminMovie(22, 'admin-jwt')).resolves.toBeNull();
+
+  expect(fetch.mock.calls[0][0]).toBe('/api/admin/movies/22');
+  expect(fetch.mock.calls[0][1]).toMatchObject({
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${'admin-jwt'}` },
+  });
+});
+
+test('PUT wishlist ส่ง JSON object ที่ backend Go ต้องอ่าน', async () => {
+  fetch.mockResolvedValue(fakeResponse(204, null));
+  await addToWishlist(18, 'member-jwt');
+
+  expect(fetch.mock.calls[0][1]).toMatchObject({
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${'member-jwt'}`,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
+  });
+});
+
+test('non-JSON error ได้ข้อความที่อ่านเข้าใจได้แทน SyntaxError', async () => {
+  fetch.mockResolvedValue({
+    ok: false,
+    status: 404,
+    json: () => Promise.reject(new SyntaxError('Unexpected token <')),
+  });
 
   await expect(apiFetch('/api/movies')).rejects.toThrow('server ไม่ได้ตอบเป็น JSON');
 });

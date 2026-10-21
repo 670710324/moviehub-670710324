@@ -8,14 +8,34 @@ const AuthContext = createContext(null);
 const TOKEN_KEY = 'moviehub.token';
 const MEMBER_KEY = 'moviehub.member';
 
+function readSession() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const rawMember = localStorage.getItem(MEMBER_KEY);
+  if (!token || !rawMember) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(MEMBER_KEY);
+    return { token: null, member: null };
+  }
+
+  try {
+    const member = JSON.parse(rawMember);
+    if (!member || typeof member !== 'object' || Array.isArray(member)) {
+      throw new Error('Invalid stored member');
+    }
+    return { token, member };
+  } catch {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(MEMBER_KEY);
+    return { token: null, member: null };
+  }
+}
+
 export function AuthProvider({ children }) {
-  // อ่านค่าเดิมจาก localStorage จะได้ไม่หลุด login ตอน refresh
-  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
-  const [member, setMember] = useState(() => JSON.parse(localStorage.getItem(MEMBER_KEY) || 'null'));
+  const [session, setSession] = useState(readSession);
+  const { token, member } = session;
 
   function remember({ token, member }) {
-    setToken(token);
-    setMember(member);
+    setSession({ token, member });
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(MEMBER_KEY, JSON.stringify(member));
   }
@@ -31,8 +51,7 @@ export function AuthProvider({ children }) {
   }
 
   function logout() {
-    setToken(null);
-    setMember(null);
+    setSession({ token: null, member: null });
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(MEMBER_KEY);
   }

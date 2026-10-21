@@ -23,6 +23,7 @@ function Navbar() {
           <NavLink to="/" end className={linkClass}>หน้าแรก</NavLink>
           <NavLink to="/movies" className={linkClass}>หนัง</NavLink>
           {isLoggedIn && <NavLink to="/me/wishlist" className={linkClass}>อยากดู</NavLink>}
+          {member?.role === 'admin' && <NavLink to="/admin" className={linkClass}>จัดการระบบ</NavLink>}
           <NavLink to="/lab" className={linkClass}>API Lab</NavLink>
           <NavLink to="/about" className={linkClass}>เกี่ยวกับ</NavLink>
         </div>
